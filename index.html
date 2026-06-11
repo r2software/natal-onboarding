@@ -114,14 +114,20 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             }).then(() => {
-                tg.showAlert("Your chart is ready! Check your Telegram chat window. ✨");
-                tg.close(); // Automatically close the browser panel overlay
+                tg.showPopup({
+                    title: 'მონაცემები მიღებულია! ✨',
+                    message: 'შენი ასტროლოგიური მონაცემები მუშავდება, მას რამდენიმე წამში მიიღებ!',
+                    buttons: [{ id: 'ok', type: 'default', text: 'გახსნა' }]
+                }, (buttonId) => {
+                    // This function only runs AFTER the button is tapped
+                    tg.close(); // Now it safely closes the WebApp overlay panel
+                });
             }).catch(err => {
                 alert("Submission failed, please try again.");
                 
                 // RECOVERY: If the server errors out, reactivate the button so they can try again
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Generate My Natal Profile';
+                submitBtn.innerHTML = 'ჩემი ნატალური პროფილის შექმნა';
             });
         });
     </script>
