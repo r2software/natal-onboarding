@@ -12,6 +12,27 @@
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
         input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 12px; background-color: var(--tg-theme-button-color, #248bcf); color: var(--tg-theme-button-text-color, #fff); border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        button:disabled {
+            background-color: #a0a0a0 !important;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -45,8 +66,10 @@
         const locationInput = document.getElementById('location');
         const autocomplete = new google.maps.places.Autocomplete(locationInput, { types: ['(cities)'] });
 
-        // Handle Submit Button Click
-        document.getElementById('submitBtn').addEventListener('click', () => {
+       // Handle Submit Button Click
+        const submitBtn = document.getElementById('submitBtn');
+
+        submitBtn.addEventListener('click', () => {
             const dateVal = document.getElementById('birthdate').value;
             const timeVal = document.getElementById('birthtime').value;
             const locationVal = locationInput.value;
@@ -59,7 +82,7 @@
             const [year, month, day] = dateVal.split('-');
             const [hour, minute] = timeVal.split(':');
 
-            // Secure extraction of verified Telegram User Data directly from the client container wrapper
+            // Secure extraction of verified Telegram User Data
             const userTelegramId = tg.initDataUnsafe?.user?.id;
 
             if (!userTelegramId) {
@@ -67,7 +90,14 @@
                 return;
             }
 
-            // Compile unified, standardized data object
+            // --- CRITICAL UI LOCKDOWN START ---
+            // 1. Freeze the button to completely block multiple clicks
+            submitBtn.disabled = true;
+            
+            // 2. Inject a visual loading indicator and update text for the 20-second wait
+            submitBtn.innerHTML = '<div class="spinner"></div> Calculating Your Chart (Up to 20s)...';
+            // --- CRITICAL UI LOCKDOWN END ---
+
             const payload = {
                 telegram_chat_id: String(userTelegramId),
                 day: parseInt(day, 10),
@@ -78,8 +108,8 @@
                 location: locationVal
             };
 
-            // CRITICAL STEP: Shoot the data out to your n8n Catch Webhook via a POST request
-            fetch('https://r2software.app.n8n.cloud/webhook/fb-astro-onboarding', {
+            // Shoot the data out to your n8n Catch Webhook via a POST request
+            fetch('https://your-n8n-instance-domain.com/webhook/astrology-onboarding-webhook', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -88,6 +118,10 @@
                 tg.close(); // Automatically close the browser panel overlay
             }).catch(err => {
                 alert("Submission failed, please try again.");
+                
+                // RECOVERY: If the server errors out, reactivate the button so they can try again
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Generate My Natal Profile';
             });
         });
     </script>
